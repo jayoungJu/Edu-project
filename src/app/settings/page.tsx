@@ -61,8 +61,8 @@ const providers: Array<{
   {
     id: "gemini",
     label: "Gemini (Google)",
-    description: "Google의 Gemini 2.0 Flash 모델. 빠른 응답속도와 멀티모달 기능이 뛰어납니다.",
-    features: ["Gemini 2.0 Flash", "긴 컨텍스트 지원", "멀티모달"],
+    description: "Google의 Gemini 3.0 Pro 모델. 최신 멀티모달 기능과 이미지 이해가 뛰어납니다.",
+    features: ["Gemini 3.0 Pro", "긴 컨텍스트 지원", "멀티모달"],
     apiDocUrl: "https://aistudio.google.com/app/apikey",
     keyPlaceholder: "AIza...로 시작하는 API 키를 입력하세요",
     icon: "💎",
