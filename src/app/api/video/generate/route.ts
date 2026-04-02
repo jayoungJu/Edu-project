@@ -79,7 +79,7 @@ async function generateWithGemini(params: {
     parameters: {
       aspectRatio,
       sampleCount: 1,
-      durationSeconds: String(duration),
+      durationSeconds: duration,
       personGeneration: "allow_all",
       enhancePrompt: true,
     },

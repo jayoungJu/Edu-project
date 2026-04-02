@@ -24,7 +24,7 @@ export async function chatWithOpenAI(
     body: JSON.stringify({
       model,
       messages: formattedMessages,
-      max_tokens: 2048,
+      max_completion_tokens: 2048,
       temperature: 0.7,
     }),
   });
