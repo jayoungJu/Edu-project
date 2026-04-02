@@ -52,8 +52,8 @@ const providers: Array<{
   {
     id: "openai",
     label: "ChatGPT (OpenAI)",
-    description: "GPT-4o-mini 모델 사용. 이미지 생성(DALL-E 3) 기능을 활용하려면 필수입니다.",
-    features: ["GPT-4o-mini", "DALL-E 3 이미지 생성", "다국어 지원"],
+    description: "GPT-5.4 모델 사용. 이미지 생성(DALL-E 3) 기능을 활용하려면 필수입니다.",
+    features: ["GPT-5.4", "DALL-E 3 이미지 생성", "다국어 지원"],
     apiDocUrl: "https://platform.openai.com/api-keys",
     keyPlaceholder: "sk-...로 시작하는 API 키를 입력하세요",
     icon: "🤖",

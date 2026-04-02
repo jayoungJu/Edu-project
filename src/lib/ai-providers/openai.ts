@@ -4,7 +4,7 @@ export async function chatWithOpenAI(
   messages: Message[],
   apiKey: string,
   systemPrompt?: string,
-  model = "gpt-4o-mini"
+  model = "gpt-5.4-2026-03-05"
 ): Promise<string> {
   const formattedMessages = messages.map((msg) => ({
     role: msg.role,
