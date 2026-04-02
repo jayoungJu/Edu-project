@@ -80,7 +80,6 @@ async function generateWithGemini(params: {
       aspectRatio,
       sampleCount: 1,
       durationSeconds: duration,
-      personGeneration: "allow_all",
       enhancePrompt: true,
     },
   };
