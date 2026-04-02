@@ -26,7 +26,7 @@ import { ToastContainer } from "@/components/ui/toast";
 import { useToast } from "@/hooks/useToast";
 import { useSettingsStore } from "@/store/settings";
 import { cn } from "@/lib/utils";
-import { VideoMode } from "@/types";
+import { VideoMode, VideoProvider } from "@/types";
 
 // ─── 탭 메뉴 ───────────────────────────────────────────────
 const tabs: { id: VideoMode; label: string; icon: React.ElementType; description: string }[] = [
@@ -84,9 +84,15 @@ export default function VideoPage() {
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   const { toasts, removeToast, success, error, info } = useToast();
-  const { runwayApiKey } = useSettingsStore();
+  const { videoProvider, openaiApiKey, geminiApiKey, setVideoProvider } = useSettingsStore();
 
-  const hasRunwayKey = runwayApiKey.length > 0;
+  const activeVideoApiKey = videoProvider === "gemini" ? geminiApiKey : openaiApiKey;
+  const hasVideoKey = activeVideoApiKey.length > 0;
+
+  const videoProviderOptions: { id: VideoProvider; label: string; icon: string; desc: string }[] = [
+    { id: "openai", label: "ChatGPT (Sora)", icon: "🤖", desc: "OpenAI API 키 사용" },
+    { id: "gemini", label: "Gemini (Veo 2)", icon: "💎", desc: "Google Gemini API 키 사용" },
+  ];
 
   // 이미지 업로드
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,8 +107,9 @@ export default function VideoPage() {
 
   // 영상 생성 요청
   const handleGenerate = async () => {
-    if (!hasRunwayKey) {
-      error("Runway API 키가 필요합니다. 설정 페이지에서 API 키를 입력해주세요.");
+    if (!hasVideoKey) {
+      const providerLabel = videoProvider === "gemini" ? "Gemini" : "OpenAI";
+      error(`${providerLabel} API 키가 필요합니다. 설정 페이지에서 API 키를 입력해주세요.`);
       return;
     }
 
@@ -135,7 +142,8 @@ export default function VideoPage() {
         prompt: finalPrompt,
         duration: parseInt(duration),
         ratio,
-        apiKey: runwayApiKey,
+        apiKey: activeVideoApiKey,
+        provider: videoProvider,
       };
       if (imagePreview) body.imageUrl = imagePreview;
 
@@ -173,7 +181,7 @@ export default function VideoPage() {
         return;
       }
       try {
-        const res = await fetch(`/api/video/status?id=${id}&apiKey=${runwayApiKey}`);
+        const res = await fetch(`/api/video/status?id=${encodeURIComponent(id)}&apiKey=${encodeURIComponent(activeVideoApiKey)}&provider=${videoProvider}`);
         const data = await res.json();
         count++;
         setPollingCount(count);
@@ -213,16 +221,55 @@ export default function VideoPage() {
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <ToastContainer toasts={toasts} onClose={removeToast} />
 
-      {/* Runway API 키 없음 경고 */}
-      {!hasRunwayKey && (
+      {/* 영상 AI 제공자 선택 */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <p className="text-sm font-medium text-gray-700 shrink-0">영상 생성 AI</p>
+            <div className="flex gap-2 flex-1">
+              {videoProviderOptions.map((opt) => {
+                const hasKey = opt.id === "gemini" ? geminiApiKey.length > 0 : openaiApiKey.length > 0;
+                const isActive = videoProvider === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    onClick={() => setVideoProvider(opt.id)}
+                    className={cn(
+                      "flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border-2 transition-all text-left",
+                      isActive
+                        ? "border-violet-300 bg-violet-50"
+                        : "border-gray-100 hover:border-gray-200 bg-white"
+                    )}
+                  >
+                    <span className="text-lg">{opt.icon}</span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900">{opt.label}</p>
+                      <p className="text-xs text-gray-400">{opt.desc}</p>
+                    </div>
+                    {hasKey ? (
+                      <span className="ml-auto text-xs text-emerald-600 font-medium shrink-0">키 설정됨</span>
+                    ) : (
+                      <span className="ml-auto text-xs text-amber-500 font-medium shrink-0">키 없음</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* API 키 없음 경고 */}
+      {!hasVideoKey && (
         <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-medium text-amber-800">Runway API 키가 필요합니다</p>
+            <p className="text-sm font-medium text-amber-800">
+              {videoProvider === "gemini" ? "Gemini" : "OpenAI"} API 키가 필요합니다
+            </p>
             <p className="text-sm text-amber-700 mt-0.5">
-              AI 영상 생성은 Runway ML API 키가 필요합니다.{" "}
-              <a href="/settings" className="underline font-medium">설정 페이지</a>에서 키를 입력하세요.
-              &nbsp;(<a href="https://app.runwayml.com" target="_blank" rel="noopener noreferrer" className="underline">app.runwayml.com</a>에서 발급)
+              <a href="/settings" className="underline font-medium">설정 페이지</a>에서{" "}
+              {videoProvider === "gemini" ? "Gemini API 키 (Google AI Studio)" : "OpenAI API 키 (ChatGPT)"} 를 입력하세요.
             </p>
           </div>
         </div>
@@ -393,7 +440,7 @@ export default function VideoPage() {
               <Button
                 onClick={handleGenerate}
                 loading={isGenerating}
-                disabled={!hasRunwayKey || isGenerating}
+                disabled={!hasVideoKey || isGenerating}
                 className="w-full"
                 size="lg"
               >

@@ -1,80 +1,136 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const RUNWAY_API_BASE = "https://api.dev.runwayml.com/v1";
+// ─── OpenAI Sora ────────────────────────────────────────────
+async function generateWithOpenAI(params: {
+  prompt: string;
+  duration: number;
+  ratio: string;
+  apiKey: string;
+  imageUrl?: string;
+}) {
+  const { prompt, duration, ratio, apiKey, imageUrl } = params;
 
+  const sizeMap: Record<string, string> = {
+    "16:9": "1280x720",
+    "9:16": "720x1280",
+    "1:1": "1080x1080",
+  };
+  const size = sizeMap[ratio] || "1280x720";
+
+  // Image-to-video: use Sora with an init frame
+  const body: Record<string, unknown> = {
+    model: "sora-1.0",
+    prompt,
+    size,
+    duration,
+    n: 1,
+  };
+  if (imageUrl) {
+    body.prompt_images = [{ url: imageUrl }];
+  }
+
+  const res = await fetch("https://api.openai.com/v1/videos/generations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: { message?: string } }).error?.message || res.statusText);
+  }
+
+  const data = await res.json();
+  // OpenAI returns { id, status, ... }
+  return { id: data.id as string };
+}
+
+// ─── Google Gemini Veo 2 ─────────────────────────────────────
+async function generateWithGemini(params: {
+  prompt: string;
+  duration: number;
+  ratio: string;
+  apiKey: string;
+  imageUrl?: string;
+}) {
+  const { prompt, duration, ratio, apiKey, imageUrl } = params;
+
+  const aspectRatioMap: Record<string, string> = {
+    "16:9": "16:9",
+    "9:16": "9:16",
+    "1:1": "1:1",
+  };
+  const aspectRatio = aspectRatioMap[ratio] || "16:9";
+
+  const instance: Record<string, unknown> = { prompt };
+  if (imageUrl) {
+    // Base64 data URL → extract mime and data
+    const match = imageUrl.match(/^data:(.+);base64,(.+)$/);
+    if (match) {
+      instance.image = { bytesBase64Encoded: match[2], mimeType: match[1] };
+    }
+  }
+
+  const body = {
+    instances: [instance],
+    parameters: {
+      aspectRatio,
+      sampleCount: 1,
+      durationSeconds: String(duration),
+      personGeneration: "allow_all",
+      enhancePrompt: true,
+    },
+  };
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }
+  );
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const msg = (err as { error?: { message?: string } }).error?.message || res.statusText;
+    throw new Error(msg);
+  }
+
+  const data = await res.json();
+  // Returns long-running operation: { name: "operations/xxx", ... }
+  return { id: data.name as string };
+}
+
+// ─── Route Handler ───────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { mode, prompt, duration, ratio, apiKey, imageUrl } = await req.json();
+    const { mode, prompt, duration, ratio, apiKey, imageUrl, provider } = await req.json();
 
     if (!apiKey) {
-      return NextResponse.json({ error: "Runway API 키가 필요합니다." }, { status: 400 });
+      return NextResponse.json({ error: "API 키가 필요합니다." }, { status: 400 });
+    }
+    if (!prompt && mode !== "video-effects") {
+      return NextResponse.json({ error: "영상 설명을 입력해주세요." }, { status: 400 });
     }
 
-    // Map ratio to Runway resolution format
-    const resolutionMap: Record<string, string> = {
-      "16:9": "1280:720",
-      "9:16": "720:1280",
-      "1:1": "960:960",
-    };
-    const resolution = resolutionMap[ratio] || "1280:720";
+    const params = { prompt: prompt || "", duration: duration || 5, ratio: ratio || "16:9", apiKey, imageUrl };
 
-    let endpoint: string;
-    let body: Record<string, unknown>;
-
-    if (mode === "text-to-video") {
-      endpoint = `${RUNWAY_API_BASE}/text_to_video`;
-      body = {
-        prompt_text: prompt,
-        duration: duration || 5,
-        resolution,
-        watermark: false,
-      };
+    let result: { id: string };
+    if (provider === "gemini") {
+      result = await generateWithGemini(params);
     } else {
-      // image-to-video, video-effects, ai-avatar — all use image_to_video endpoint
-      endpoint = `${RUNWAY_API_BASE}/image_to_video`;
-      body = {
-        prompt_image: imageUrl || "",
-        prompt_text: prompt || "",
-        duration: duration || 5,
-        resolution,
-        watermark: false,
-      };
-
-      // For text-only avatar/effects without an image, fall back to text_to_video
-      if (!imageUrl) {
-        endpoint = `${RUNWAY_API_BASE}/text_to_video`;
-        body = {
-          prompt_text: prompt,
-          duration: duration || 5,
-          resolution,
-          watermark: false,
-        };
-      }
+      // default: openai
+      result = await generateWithOpenAI(params);
     }
 
-    const response = await fetch(endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "X-Runway-Version": "2024-11-06",
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errData = await response.json().catch(() => ({}));
-      const message = (errData as { message?: string }).message || response.statusText;
-      return NextResponse.json(
-        { error: `Runway API 오류: ${message}` },
-        { status: response.status }
-      );
-    }
-
-    const data = await response.json();
-    return NextResponse.json({ id: data.id });
+    return NextResponse.json({ id: result.id, provider });
   } catch (err) {
     console.error("Video generate error:", err);
-    return NextResponse.json({ error: "영상 생성 요청 중 오류가 발생했습니다." }, { status: 500 });
+    const message = err instanceof Error ? err.message : "영상 생성 요청 중 오류가 발생했습니다.";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

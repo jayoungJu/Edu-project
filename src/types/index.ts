@@ -1,12 +1,14 @@
 export type AIProvider = "hyperclova" | "openai" | "gemini" | "claude";
 
+export type VideoProvider = "openai" | "gemini";
+
 export interface APISettings {
   activeProvider: AIProvider;
+  videoProvider: VideoProvider;
   hyperclovaApiKey: string;
   openaiApiKey: string;
   geminiApiKey: string;
   claudeApiKey: string;
-  runwayApiKey: string;
 }
 
 export interface Message {

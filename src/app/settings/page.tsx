@@ -15,6 +15,7 @@ import {
   XCircle,
   Lock,
   Video,
+  Clapperboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -166,43 +167,6 @@ function ApiKeyInput({
   );
 }
 
-function RunwayKeyInput({ value, onChange }: { value: string; onChange: (key: string) => void }) {
-  const [showKey, setShowKey] = useState(false);
-  const hasKey = value.length > 0;
-
-  return (
-    <div>
-      <div className="flex gap-2">
-        <div className="flex-1">
-          <Input
-            type={showKey ? "text" : "password"}
-            placeholder="runway_api_key_...로 시작하는 API 키를 입력하세요"
-            value={value}
-            onChange={(e) => onChange(e.target.value)}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowKey(!showKey)}
-          className="px-3 py-2 rounded-lg border border-gray-200 text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-        </button>
-      </div>
-      {hasKey && (
-        <p className="mt-1.5 text-xs text-emerald-600 flex items-center gap-1">
-          <CheckCircle2 className="h-3.5 w-3.5" /> API 키가 설정되었습니다
-        </p>
-      )}
-      {!hasKey && (
-        <p className="mt-1.5 text-xs text-amber-600 flex items-center gap-1">
-          <Info className="h-3.5 w-3.5" /> API 키 없이는 AI 영상 스튜디오를 사용할 수 없습니다
-        </p>
-      )}
-    </div>
-  );
-}
-
 export default function SettingsPage() {
   const { toasts, removeToast, success } = useToast();
   const {
@@ -211,7 +175,6 @@ export default function SettingsPage() {
     openaiApiKey,
     geminiApiKey,
     claudeApiKey,
-    runwayApiKey,
     setActiveProvider,
     setApiKey,
     resetSettings,
@@ -356,37 +319,73 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
 
-        {/* Runway API 키 */}
+        {/* 영상 생성 AI 안내 */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Video className="h-5 w-5 text-violet-600" />
-              AI 영상 생성 (Runway ML)
+              <Clapperboard className="h-5 w-5 text-violet-600" />
+              AI 영상 스튜디오 — 지원 API
             </CardTitle>
             <CardDescription>
-              AI 영상 스튜디오 기능을 사용하려면 Runway ML API 키가 필요합니다.
+              영상 생성은 별도 API 키 없이 아래 기존 AI 키를 그대로 사용합니다.
+              영상 스튜디오에서 원하는 제공자를 선택하세요.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-lg">🎬</span>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Runway ML</p>
-                  <p className="text-xs text-gray-500">Text-to-Video, Image-to-Video, AI 효과, AI 아바타</p>
-                </div>
-              </div>
-              <a
-                href="https://app.runwayml.com/account/team"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 shrink-0"
-              >
-                API 키 발급
-                <ExternalLink className="h-3 w-3" />
-              </a>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                {
+                  icon: "🤖",
+                  name: "ChatGPT (OpenAI Sora)",
+                  desc: "OpenAI API 키로 Sora 모델 영상 생성",
+                  keyField: "openaiApiKey" as const,
+                  docUrl: "https://platform.openai.com/api-keys",
+                  docLabel: "OpenAI API 키 발급",
+                },
+                {
+                  icon: "💎",
+                  name: "Gemini (Google Veo 2)",
+                  desc: "Gemini API 키로 Veo 2 모델 영상 생성",
+                  keyField: "geminiApiKey" as const,
+                  docUrl: "https://aistudio.google.com/app/apikey",
+                  docLabel: "Gemini API 키 발급",
+                },
+              ].map((item) => {
+                const hasKey = apiKeys[item.keyField === "openaiApiKey" ? "openai" : "gemini"].length > 0;
+                return (
+                  <div key={item.name} className="p-3 rounded-xl border border-gray-100 bg-gray-50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{item.icon}</span>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-900">{item.name}</p>
+                          <p className="text-xs text-gray-500">{item.desc}</p>
+                        </div>
+                      </div>
+                      {hasKey ? (
+                        <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                          <CheckCircle2 className="h-3.5 w-3.5" />사용 가능
+                        </span>
+                      ) : (
+                        <a
+                          href={item.docUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 shrink-0"
+                        >
+                          {item.docLabel}
+                          <ExternalLink className="h-3 w-3" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <RunwayKeyInput value={runwayApiKey} onChange={(key) => setApiKey("runway", key)} />
+            <p className="text-xs text-gray-400 flex items-center gap-1">
+              <Info className="h-3.5 w-3.5 shrink-0" />
+              위 API 키는 &quot;API 키 관리&quot; 섹션에서 입력하세요. 영상 스튜디오 페이지에서 제공자를 전환할 수 있습니다.
+            </p>
           </CardContent>
         </Card>
 
