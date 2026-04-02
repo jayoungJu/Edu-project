@@ -6,6 +6,7 @@ export interface APISettings {
   openaiApiKey: string;
   geminiApiKey: string;
   claudeApiKey: string;
+  runwayApiKey: string;
 }
 
 export interface Message {
@@ -22,13 +23,6 @@ export interface PromptTemplate {
   category: string;
   template: string;
   variables: string[];
-  createdAt: Date;
-}
-
-export interface GeneratedImage {
-  id: string;
-  prompt: string;
-  url: string;
   createdAt: Date;
 }
 
@@ -51,14 +45,6 @@ export type DocumentType =
   | "announcement"
   | "sns_post";
 
-export interface DesignTemplate {
-  id: string;
-  name: string;
-  category: string;
-  thumbnail: string;
-  description: string;
-}
-
 export interface ChatSession {
   id: string;
   title: string;
@@ -66,4 +52,30 @@ export interface ChatSession {
   provider: AIProvider;
   createdAt: Date;
   updatedAt: Date;
+}
+
+// Video types
+export type VideoMode =
+  | "text-to-video"
+  | "image-to-video"
+  | "video-effects"
+  | "ai-avatar";
+
+export interface VideoJob {
+  id: string;
+  mode: VideoMode;
+  prompt: string;
+  status: "pending" | "processing" | "succeeded" | "failed";
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  createdAt: Date;
+}
+
+export interface VideoEffect {
+  id: string;
+  name: string;
+  emoji: string;
+  description: string;
+  category: string;
+  prompt: string;
 }

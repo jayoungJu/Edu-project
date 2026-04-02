@@ -4,9 +4,7 @@ import React from "react";
 import Link from "next/link";
 import {
   Wand2,
-  ImageIcon,
   FileText,
-  Palette,
   MessageSquare,
   TrendingUp,
   Zap,
@@ -15,6 +13,7 @@ import {
   Users,
   Clock,
   ChevronRight,
+  Video,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -43,14 +42,14 @@ const features = [
     badge: "추천",
   },
   {
-    href: "/image",
-    title: "이미지 생성",
-    description: "상품 홍보물, SNS 이미지, 로고 등을 AI로 빠르게 생성하세요",
-    icon: ImageIcon,
+    href: "/video",
+    title: "AI 영상 스튜디오",
+    description: "텍스트·이미지로 홍보 영상, AI 아바타, 트렌드 효과 영상을 생성하세요",
+    icon: Video,
     color: "from-pink-500 to-rose-500",
     bg: "bg-pink-50",
     iconColor: "text-pink-600",
-    badge: null,
+    badge: "신규",
   },
   {
     href: "/document",
@@ -62,20 +61,10 @@ const features = [
     iconColor: "text-emerald-600",
     badge: null,
   },
-  {
-    href: "/design",
-    title: "디자인 도구",
-    description: "전문 디자이너 없이도 수준 높은 비즈니스 디자인을 완성하세요",
-    icon: Palette,
-    color: "from-amber-500 to-orange-500",
-    bg: "bg-amber-50",
-    iconColor: "text-amber-600",
-    badge: "신규",
-  },
 ];
 
 const stats = [
-  { label: "AI 도구", value: "5가지", icon: Zap, color: "text-violet-600" },
+  { label: "AI 도구", value: "4가지", icon: Zap, color: "text-violet-600" },
   { label: "프롬프트 템플릿", value: "50+", icon: Star, color: "text-amber-500" },
   { label: "문서 유형", value: "8가지", icon: FileText, color: "text-emerald-600" },
   { label: "지원 AI 모델", value: "4개", icon: Users, color: "text-blue-600" },
@@ -84,7 +73,7 @@ const stats = [
 const recentActivities = [
   { icon: Wand2, text: "마케팅 프롬프트 생성", time: "방금 전", color: "text-violet-600", bg: "bg-violet-50" },
   { icon: FileText, text: "사업계획서 초안 작성", time: "5분 전", color: "text-emerald-600", bg: "bg-emerald-50" },
-  { icon: ImageIcon, text: "상품 홍보 이미지 생성", time: "12분 전", color: "text-pink-600", bg: "bg-pink-50" },
+  { icon: Video, text: "상품 홍보 영상 생성", time: "12분 전", color: "text-pink-600", bg: "bg-pink-50" },
 ];
 
 export default function DashboardPage() {
@@ -158,7 +147,7 @@ export default function DashboardPage() {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">AI 비즈니스 도구</h3>
-          <span className="text-sm text-gray-400">5개 도구 이용 가능</span>
+          <span className="text-sm text-gray-400">4개 도구 이용 가능</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {features.map((feature) => (

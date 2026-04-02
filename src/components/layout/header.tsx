@@ -11,9 +11,8 @@ const pageTitles: Record<string, { title: string; description: string }> = {
   "/": { title: "대시보드", description: "비즈니스 AI 도구 전체 현황" },
   "/chat": { title: "AI 채팅", description: "AI와 자유롭게 대화하세요" },
   "/prompt": { title: "프롬프트 도구", description: "효과적인 프롬프트를 작성하고 관리하세요" },
-  "/image": { title: "이미지 생성", description: "AI로 마케팅 이미지를 생성하세요" },
+  "/video": { title: "AI 영상 스튜디오", description: "텍스트·이미지로 AI 영상을 생성하세요" },
   "/document": { title: "문서 자동화", description: "비즈니스 문서를 자동으로 생성하세요" },
-  "/design": { title: "디자인 도구", description: "전문적인 디자인 템플릿을 활용하세요" },
   "/settings": { title: "설정", description: "AI 모델과 API 키를 관리하세요" },
 };
 

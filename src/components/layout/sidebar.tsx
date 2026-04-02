@@ -8,15 +8,14 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   Wand2,
-  ImageIcon,
   FileText,
-  Palette,
   Settings,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   MessageSquare,
   Store,
+  Video,
 } from "lucide-react";
 import { useSettingsStore } from "@/store/settings";
 import { ProviderBadge } from "@/components/ui/provider-badge";
@@ -41,22 +40,16 @@ const navItems = [
     description: "프롬프트 작성",
   },
   {
-    href: "/image",
-    label: "이미지 생성",
-    icon: ImageIcon,
-    description: "AI 이미지 생성",
+    href: "/video",
+    label: "AI 영상 스튜디오",
+    icon: Video,
+    description: "AI 영상 생성",
   },
   {
     href: "/document",
     label: "문서 자동화",
     icon: FileText,
     description: "문서 자동 생성",
-  },
-  {
-    href: "/design",
-    label: "디자인 도구",
-    icon: Palette,
-    description: "디자인 템플릿",
   },
 ];
 
