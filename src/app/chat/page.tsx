@@ -27,7 +27,11 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
+
   const { toasts, removeToast, success, error } = useToast();
 
   const { sessions, activeSessionId, createSession, setActiveSession, deleteSession, getActiveSession, addMessage } = useChatStore();
@@ -102,6 +106,18 @@ export default function ChatPage() {
       handleSend();
     }
   };
+
+  if (!mounted) {
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center bg-gray-50">
+        <div className="flex gap-1.5">
+          <div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce [animation-delay:0ms]" />
+          <div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce [animation-delay:150ms]" />
+          <div className="w-2 h-2 bg-violet-400 rounded-full animate-bounce [animation-delay:300ms]" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-[calc(100vh-4rem)] bg-gray-50">

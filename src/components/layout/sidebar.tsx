@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useMounted } from "@/hooks/useMounted";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -62,6 +63,7 @@ const navItems = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+  const mounted = useMounted();
   const { activeProvider } = useSettingsStore();
 
   return (
@@ -107,7 +109,7 @@ export function Sidebar() {
       </div>
 
       {/* Active Provider */}
-      {!collapsed && (
+      {!collapsed && mounted && (
         <div className="px-4 py-3 border-b border-gray-100">
           <p className="text-xs text-gray-400 mb-1.5">현재 AI 모델</p>
           <ProviderBadge provider={activeProvider} />

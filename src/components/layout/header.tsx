@@ -2,9 +2,10 @@
 
 import React from "react";
 import { usePathname } from "next/navigation";
-import { Bell, Search, HelpCircle } from "lucide-react";
+import { Bell, HelpCircle } from "lucide-react";
 import { useSettingsStore } from "@/store/settings";
 import { PROVIDER_LABELS } from "@/lib/utils";
+import { useMounted } from "@/hooks/useMounted";
 
 const pageTitles: Record<string, { title: string; description: string }> = {
   "/": { title: "대시보드", description: "비즈니스 AI 도구 전체 현황" },
@@ -18,6 +19,7 @@ const pageTitles: Record<string, { title: string; description: string }> = {
 
 export function Header() {
   const pathname = usePathname();
+  const mounted = useMounted();
   const { activeProvider } = useSettingsStore();
   const pageInfo = pageTitles[pathname] || { title: "BizAI", description: "" };
 
@@ -28,10 +30,12 @@ export function Header() {
         <p className="text-xs text-gray-400">{pageInfo.description}</p>
       </div>
       <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-500">
-          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span>{PROVIDER_LABELS[activeProvider]} 사용 중</span>
-        </div>
+        {mounted && (
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-100 text-xs text-gray-500">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span>{PROVIDER_LABELS[activeProvider]} 사용 중</span>
+          </div>
+        )}
         <button className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors">
           <HelpCircle className="h-5 w-5" />
         </button>
