@@ -1,13 +1,29 @@
 import { Message } from "@/types";
 
-const HYPERCLOVA_API_URL =
-  "https://clovastudio.stream.ntruss.com/testapp/v1/chat-completions/HCX-003";
+// HyperCLOVA X Open Models - OpenAI 호환 API
+const HYPERCLOVA_BASE_URL = "https://namc-aigw.io.naver.com/v1";
+export const HYPERCLOVA_DEFAULT_MODEL = "HyperCLOVAX-SEED-Text-Instruct-1.5B";
+
+// 플랫폼 기본 API 키 (서버 환경변수에서 로드)
+export function getPlatformApiKey(): string {
+  return process.env.HYPERCLOVA_API_KEY || "";
+}
 
 export async function chatWithHyperCLOVA(
   messages: Message[],
   apiKey: string,
-  systemPrompt?: string
+  systemPrompt?: string,
+  model: string = HYPERCLOVA_DEFAULT_MODEL
 ): Promise<string> {
+  // 사용자 키가 없으면 플랫폼 기본 키 사용
+  const key = apiKey || getPlatformApiKey();
+
+  if (!key) {
+    throw new Error(
+      "HyperCLOVA X API 키가 설정되지 않았습니다. 관리자에게 문의하거나 설정에서 API 키를 입력해주세요."
+    );
+  }
+
   const formattedMessages = messages.map((msg) => ({
     role: msg.role,
     content: msg.content,
@@ -17,52 +33,29 @@ export async function chatWithHyperCLOVA(
     formattedMessages.unshift({ role: "system", content: systemPrompt });
   }
 
-  const response = await fetch(HYPERCLOVA_API_URL, {
+  const response = await fetch(`${HYPERCLOVA_BASE_URL}/chat/completions`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "X-NCP-CLOVASTUDIO-API-KEY": apiKey,
-      "X-NCP-APIGW-API-KEY": apiKey,
+      Authorization: `Bearer ${key}`,
     },
     body: JSON.stringify({
+      model,
       messages: formattedMessages,
-      topP: 0.8,
-      topK: 0,
-      maxTokens: 2048,
-      temperature: 0.5,
-      repeatPenalty: 1.1,
-      stopBefore: [],
-      includeAiFilters: false,
+      max_tokens: 2048,
+      temperature: 0.7,
+      top_p: 0.8,
+      frequency_penalty: 0,
     }),
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`HyperCLOVA X API 오류: ${response.status} - ${error}`);
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(
+      `HyperCLOVA X API 오류: ${response.status} - ${error.error?.message || error.message || response.statusText}`
+    );
   }
 
   const data = await response.json();
-  return data.result?.message?.content || "";
-}
-
-export async function generatePromptWithHyperCLOVA(
-  userInput: string,
-  context: string,
-  apiKey: string
-): Promise<string> {
-  const systemPrompt = `당신은 소상공인의 비즈니스를 돕는 AI 어시스턴트입니다.
-사용자의 요청을 바탕으로 최적화된 AI 프롬프트를 생성해주세요.
-명확하고 구체적이며, 실제 비즈니스에 활용 가능한 프롬프트를 작성해주세요.`;
-
-  const messages: Message[] = [
-    {
-      id: "1",
-      role: "user",
-      content: `다음 용도로 사용할 최적의 프롬프트를 작성해주세요:\n용도: ${userInput}\n맥락: ${context}`,
-      createdAt: new Date(),
-    },
-  ];
-
-  return chatWithHyperCLOVA(messages, apiKey, systemPrompt);
+  return data.choices?.[0]?.message?.content || "";
 }
