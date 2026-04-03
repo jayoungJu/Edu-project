@@ -171,7 +171,7 @@ export default function VideoPage() {
   };
 
   const pollJobStatus = async (id: string) => {
-    const maxPolls = 60; // 최대 5분
+    const maxPolls = 120; // 최대 10분
     let count = 0;
 
     const poll = async () => {
@@ -186,11 +186,11 @@ export default function VideoPage() {
         count++;
         setPollingCount(count);
 
-        if (data.status === "SUCCEEDED") {
-          setVideoUrl(data.output?.[0] || null);
+        if (data.status === "succeeded") {
+          setVideoUrl(data.videoUrl || null);
           success("영상이 생성되었습니다!");
           setIsGenerating(false);
-        } else if (data.status === "FAILED") {
+        } else if (data.status === "failed") {
           error("영상 생성에 실패했습니다. 프롬프트를 수정하고 다시 시도해주세요.");
           setIsGenerating(false);
         } else {

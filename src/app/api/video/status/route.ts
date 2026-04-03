@@ -12,26 +12,30 @@ async function checkOpenAIStatus(id: string, apiKey: string) {
   }
 
   const data = await res.json();
-  // OpenAI status: queued | processing | completed | failed
   const raw = (data.status as string)?.toLowerCase() || "";
   const status =
     raw === "completed" ? "succeeded" :
-    raw === "failed" ? "failed" :
-    raw === "processing" ? "processing" : "pending";
+    raw === "failed"    ? "failed"    :
+    raw === "processing"? "processing": "pending";
 
   const videoUrl = data.data?.[0]?.url ?? null;
   return { status, videoUrl, progress: data.progress ?? 0 };
 }
 
-// ─── Gemini Veo 2 status ──────────────────────────────────────
+// ─── Gemini Veo 3.1 status ────────────────────────────────────
 async function checkGeminiStatus(operationName: string, apiKey: string) {
-  // operationName is like "operations/xxx" or full path
-  const url = `https://generativelanguage.googleapis.com/v1beta/${operationName}?key=${apiKey}`;
-  const res = await fetch(url);
+  const url = `https://generativelanguage.googleapis.com/v1beta/${operationName}`;
+  const res = await fetch(url, {
+    headers: {
+      "Content-Type": "application/json",
+      "x-goog-api-key": apiKey,
+    },
+  });
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as { error?: { message?: string } }).error?.message || res.statusText);
+    const msg = (err as { error?: { message?: string } }).error?.message || res.statusText;
+    throw new Error(`Gemini 상태 확인 오류 (${res.status}): ${msg}`);
   }
 
   const data = await res.json();
@@ -40,23 +44,37 @@ async function checkGeminiStatus(operationName: string, apiKey: string) {
     throw new Error(data.error.message || "Gemini 오류");
   }
 
+  // 아직 진행 중
   if (!data.done) {
-    // Still running — extract percentage if available
     const progress = data.metadata?.progressPercent ?? 0;
     return { status: "processing", videoUrl: null, progress };
   }
 
-  // Completed
-  const videoUri =
-    data.response?.videos?.[0]?.uri ??
-    data.response?.generateVideoResponse?.generatedSamples?.[0]?.video?.uri ??
-    null;
+  // ── 완료: Veo 3.1 응답 형식 처리 ──────────────────────────
+  const response = data.response ?? {};
 
-  if (!videoUri) {
-    return { status: "failed", videoUrl: null, progress: 100 };
+  // 형식 1: predictions 배열 (base64 인코딩 영상)
+  const predictions = response.predictions ?? [];
+  if (predictions.length > 0 && predictions[0].bytesBase64Encoded) {
+    const mime = predictions[0].mimeType || "video/mp4";
+    const videoUrl = `data:${mime};base64,${predictions[0].bytesBase64Encoded}`;
+    return { status: "succeeded", videoUrl, progress: 100 };
   }
 
-  return { status: "succeeded", videoUrl: videoUri as string, progress: 100 };
+  // 형식 2: generateVideoResponse (URI 방식)
+  const samples = response.generateVideoResponse?.generatedSamples ?? [];
+  if (samples.length > 0 && samples[0].video?.uri) {
+    return { status: "succeeded", videoUrl: samples[0].video.uri as string, progress: 100 };
+  }
+
+  // 형식 3: videos 배열
+  const videos = response.videos ?? [];
+  if (videos.length > 0 && videos[0].uri) {
+    return { status: "succeeded", videoUrl: videos[0].uri as string, progress: 100 };
+  }
+
+  // done=true 인데 영상 데이터 없으면 실패로 처리
+  return { status: "failed", videoUrl: null, progress: 100 };
 }
 
 // ─── Route Handler ───────────────────────────────────────────
