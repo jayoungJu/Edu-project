@@ -17,7 +17,6 @@ async function generateWithOpenAI(params: {
   };
   const size = sizeMap[ratio] || "1280x720";
 
-  // Image-to-video: use Sora with an init frame
   const body: Record<string, unknown> = {
     model: "sora-1.0",
     prompt,
@@ -44,19 +43,17 @@ async function generateWithOpenAI(params: {
   }
 
   const data = await res.json();
-  // OpenAI returns { id, status, ... }
   return { id: data.id as string };
 }
 
-// ─── Google Gemini Veo 2 ─────────────────────────────────────
+// ─── Google Gemini Veo 3.1 ───────────────────────────────────
 async function generateWithGemini(params: {
   prompt: string;
-  duration: number;
   ratio: string;
   apiKey: string;
   imageUrl?: string;
 }) {
-  const { prompt, duration, ratio, apiKey, imageUrl } = params;
+  const { prompt, ratio, apiKey, imageUrl } = params;
 
   const aspectRatioMap: Record<string, string> = {
     "16:9": "16:9",
@@ -66,29 +63,32 @@ async function generateWithGemini(params: {
   const aspectRatio = aspectRatioMap[ratio] || "16:9";
 
   const instance: Record<string, unknown> = { prompt };
+
+  // 이미지-to-비디오: base64 데이터 URL 파싱
   if (imageUrl) {
-    // Base64 data URL → extract mime and data
     const match = imageUrl.match(/^data:(.+);base64,(.+)$/);
     if (match) {
       instance.image = { bytesBase64Encoded: match[2], mimeType: match[1] };
     }
   }
 
+  // Veo 3.1 — durationSeconds 없음(8초 고정), aspectRatio만 전달
   const body = {
     instances: [instance],
     parameters: {
       aspectRatio,
       sampleCount: 1,
-      durationSeconds: duration,
-      enhancePrompt: true,
     },
   };
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/veo-2.0-generate-001:predictLongRunning?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/veo-3.1-generate-preview:predictLongRunning`,
     {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey,
+      },
       body: JSON.stringify(body),
     }
   );
@@ -96,11 +96,11 @@ async function generateWithGemini(params: {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     const msg = (err as { error?: { message?: string } }).error?.message || res.statusText;
-    throw new Error(msg);
+    throw new Error(`Veo 3.1 오류 (${res.status}): ${msg}`);
   }
 
   const data = await res.json();
-  // Returns long-running operation: { name: "operations/xxx", ... }
+  // Long-running operation name: "operations/xxx"
   return { id: data.name as string };
 }
 
@@ -116,14 +116,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "영상 설명을 입력해주세요." }, { status: 400 });
     }
 
-    const params = { prompt: prompt || "", duration: duration || 5, ratio: ratio || "16:9", apiKey, imageUrl };
-
     let result: { id: string };
+
     if (provider === "gemini") {
-      result = await generateWithGemini(params);
+      result = await generateWithGemini({
+        prompt: prompt || "",
+        ratio: ratio || "16:9",
+        apiKey,
+        imageUrl,
+      });
     } else {
-      // default: openai
-      result = await generateWithOpenAI(params);
+      result = await generateWithOpenAI({
+        prompt: prompt || "",
+        duration: duration || 5,
+        ratio: ratio || "16:9",
+        apiKey,
+        imageUrl,
+      });
     }
 
     return NextResponse.json({ id: result.id, provider });

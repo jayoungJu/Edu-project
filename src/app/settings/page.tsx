@@ -61,8 +61,8 @@ const providers: Array<{
   {
     id: "gemini",
     label: "Gemini (Google)",
-    description: "Google의 Gemini 3.0 Pro 모델. 최신 멀티모달 기능과 이미지 이해가 뛰어납니다.",
-    features: ["Gemini 3.0 Pro", "긴 컨텍스트 지원", "멀티모달"],
+    description: "Google의 Gemini 3.1 Pro Preview 모델. 이미지 생성(Nano Banana) 및 Veo 3.1 영상 생성 지원.",
+    features: ["Gemini 3.1 Pro", "Nano Banana 이미지", "Veo 3.1 영상"],
     apiDocUrl: "https://aistudio.google.com/app/apikey",
     keyPlaceholder: "AIza...로 시작하는 API 키를 입력하세요",
     icon: "💎",
